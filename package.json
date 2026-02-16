@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "expo": "54.0.31",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.4",
+    "react-native-maps": "1.20.1",
+    "react-native-web": "^0.21.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.10",
+    "@types/react-native-maps": "^0.24.2",
+    "baseline-browser-mapping": "^2.9.14",
+    "expo-module-scripts": "^5.0.8"
+  }
+}

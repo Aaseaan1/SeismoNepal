@@ -1,0 +1,47 @@
+-- CREATE TABLE QUERY
+CREATE TABLE IF NOT EXISTS earthquakes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    country TEXT DEFAULT 'Nepal',
+    district TEXT NOT NULL,
+    epicenter TEXT NOT NULL,
+    magnitude REAL NOT NULL,
+    date TEXT NOT NULL,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL
+);
+
+-- CREATE INDEXES
+CREATE INDEX IF NOT EXISTS idx_magnitude ON earthquakes(magnitude);
+CREATE INDEX IF NOT EXISTS idx_district ON earthquakes(district);
+CREATE INDEX IF NOT EXISTS idx_id ON earthquakes(id DESC);
+
+-- SELECT ALL EARTHQUAKES
+SELECT * FROM earthquakes ORDER BY id DESC;
+
+-- SELECT BY DISTRICT
+SELECT * FROM earthquakes WHERE district = 'Kathmandu';
+
+-- SELECT HIGH MAGNITUDE EARTHQUAKES
+SELECT country, district, epicenter, magnitude, date FROM earthquakes WHERE magnitude >= 5.0;
+
+-- COUNT TOTAL EARTHQUAKES
+SELECT COUNT(*) FROM earthquakes;
+
+-- INSERT EARTHQUAKE
+INSERT INTO earthquakes (country, district, epicenter, magnitude, date, latitude, longitude) 
+VALUES ('Nepal', 'Kathmandu', 'Kathmandu Valley', 4.5, '01/16/2026', 27.72, 85.32);
+
+-- UPDATE EARTHQUAKE
+UPDATE earthquakes SET magnitude = 5.0 WHERE id = 1;
+
+-- DELETE EARTHQUAKE BY ID
+DELETE FROM earthquakes WHERE id = 1;
+
+-- DELETE ALL EARTHQUAKES
+DELETE FROM earthquakes;
+
+-- SELECT RECENT EARTHQUAKES (LAST 10)
+SELECT * FROM earthquakes ORDER BY id DESC LIMIT 10;
+
+-- SEARCH BY DISTRICT AND MAGNITUDE
+SELECT * FROM earthquakes WHERE district = 'Pokhara' AND magnitude >= 4.0;

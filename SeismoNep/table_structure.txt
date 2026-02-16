@@ -1,0 +1,20 @@
+EARTHQUAKES TABLE STRUCTURE
+===========================
+
+Table Name: Earthquake live Data Nepal
+
++------+---------+----------+-------------+------------+------------+----------+-----------+
+| id   | country | district | epicenter   | magnitude  | date       | latitude | longitude | 
++------+---------+----------+-------------+------------+------------+----------+-----------+
+
+Details given below: 
+
+id : Start from 1
+country: Nepal
+district: Name of District of Nepal
+epicenter: where earthquake occur of district
+magnitude: X.X
+date: local date of Nepal like MM/DD/YYYY
+latitude: XX.XX%
+Longitude: XX.XX%
+
