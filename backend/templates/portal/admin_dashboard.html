@@ -1,0 +1,65 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Admin Portal</title>
+  <link rel="stylesheet" href="{% static 'css/portal.css' %}" />
+</head>
+<body>
+  <div class="admin-container">
+    <h1 style="text-align: center;">Admin Web Portal</h1>
+    <p class="meta" style="text-align: center;">Logged in as <strong>{{ request.user.username }}</strong> | <a href="/portal/logout/" class="btn-logout">Logout</a></p>
+
+    {% if messages %}
+      {% for message in messages %}
+        <p class="message">{{ message }}</p>
+      {% endfor %}
+    {% endif %}
+
+    <h2>Manage Users</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Role</th>
+          <th>Active</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <form method="post" action="/portal/admin/user/{{ user.id }}/update/">
+            {% csrf_token %}
+            <td><strong>{{ user.username }}</strong></td>
+            <td><input type="email" name="email" value="{{ user.email|default:'' }}" /></td>
+            <td><input type="text" name="phone_number" value="{{ user.phone_number|default:'' }}" /></td>
+            <td>
+              <select name="role">
+                <option value="client" {% if user.role == 'client' %}selected{% endif %}>Client</option>
+                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+              </select>
+            </td>
+            <td><input type="checkbox" name="is_active" {% if user.is_active %}checked{% endif %} /></td>
+            <td class="actions">
+              <button type="submit" class="btn-success">Save</button>
+          </form>
+              <form method="post" action="/portal/admin/user/{{ user.id }}/delete/">
+                {% csrf_token %}
+                <button type="submit" class="btn-danger" onclick="return confirm('Delete user {{ user.username }}?')">Delete</button>
+              </form>
+              <form method="post" action="/portal/admin/user/{{ user.id }}/test-push/">
+                {% csrf_token %}
+                <button type="submit">Test Push</button>
+              </form>
+            </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

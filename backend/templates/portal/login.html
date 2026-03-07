@@ -1,0 +1,27 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>SeismoNep</title>
+  <link rel="stylesheet" href="{% static 'css/portal.css' %}" />
+</head>
+<body class="login-page">
+  <div class="container">
+    <h1>SeismoNepal</h1>
+    {% if form.errors %}<p class="error">Invalid credentials.</p>{% endif %}
+    <form method="post" class="auth-form">
+      {% csrf_token %}
+      <div class="form-row">
+        <label>Username</label>
+        <input type="text" name="username" required />
+      </div>
+      <div class="form-row">
+        <label>Password</label>
+        <input type="password" name="password" required />
+      </div>
+      <button type="submit">Login</button>
+    </form>
+  </div>
+</body>
+</html>
