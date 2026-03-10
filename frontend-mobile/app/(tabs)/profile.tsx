@@ -11,14 +11,24 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { API_BASE_URL } from '../../lib/api';
 import AsyncStorage from '../../lib/storage';
 import { registerDeviceToken } from '../../lib/pushToken';
 
+const LANGUAGE_KEY = 'appLanguage';
+
 type Profile = {
   id?: number;
   full_name?: string;
+  date_of_birth?: string;
+  address?: string;
+  sex?: string;
+  district?: string;
+  province?: string;
+  state_no?: string;
+  blood_group?: string;
   username?: string;
   email?: string;
   phone?: string;
@@ -32,6 +42,50 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [language, setLanguage] = useState<'en' | 'ne'>('en');
+
+  useFocusEffect(
+    useCallback(() => {
+      const loadLanguage = async () => {
+        try {
+          const savedLanguage = await AsyncStorage.getItem(LANGUAGE_KEY);
+          if (savedLanguage === 'en' || savedLanguage === 'ne') {
+            setLanguage(savedLanguage);
+          }
+        } catch (loadError) {
+          console.warn('Failed to load language preference:', loadError);
+        }
+      };
+
+      void loadLanguage();
+    }, [])
+  );
+
+  const t = {
+    loading: language === 'ne' ? 'प्रोफाइल लोड हुँदैछ...' : 'Loading profile...',
+    sessionExpired: language === 'ne' ? 'सेसन समाप्त भयो' : 'Session expired',
+    relogin: language === 'ne' ? 'प्रोफाइल हेर्न फेरि लगइन गर्नुहोस्।' : 'Please log in again to view your profile.',
+    goToLogin: language === 'ne' ? 'लगइनमा जानुहोस्' : 'Go to Login',
+    somethingWrong: language === 'ne' ? 'केही समस्या भयो' : 'Something went wrong',
+    tryAgain: language === 'ne' ? 'फेरि प्रयास गर्नुहोस्' : 'Try again',
+    username: language === 'ne' ? 'प्रयोगकर्ता नाम' : 'Username',
+    fullName: language === 'ne' ? 'पुरा नाम' : 'Full Name',
+    dob: language === 'ne' ? 'जन्म मिति' : 'DOB',
+    address: language === 'ne' ? 'ठेगाना' : 'Address',
+    sex: language === 'ne' ? 'लिङ्ग' : 'Sex',
+    district: language === 'ne' ? 'जिल्ला' : 'District',
+    province: language === 'ne' ? 'प्रदेश' : 'Province',
+    stateNo: language === 'ne' ? 'राज्य नं' : 'State No',
+    bloodGroup: language === 'ne' ? 'रक्त समूह' : 'Blood Group',
+    email: language === 'ne' ? 'इमेल' : 'Email',
+    phone: language === 'ne' ? 'फोन' : 'Phone',
+    logout: language === 'ne' ? 'लगआउट' : 'Logout',
+    title: language === 'ne' ? 'प्रोफाइल' : 'Profile',
+    subtitle: language === 'ne' ? 'खाता र सेसन विवरण' : 'Account And Session Details',
+    loggedOutTitle: language === 'ne' ? 'लगआउट भयो' : 'Logged out',
+    loggedOutMessage: language === 'ne' ? 'तपाईंको सेसन हटाइएको छ।' : 'Your session has been cleared.',
+    user: language === 'ne' ? 'प्रयोगकर्ता' : 'User',
+  };
 
   const getToken = async () => {
     const accessToken = await AsyncStorage.getItem('accessToken');
@@ -98,7 +152,7 @@ export default function ProfileScreen() {
     await AsyncStorage.removeItem('refreshToken');
     setProfile(null);
     setIsAuthenticated(false);
-    Alert.alert('Logged out', 'Your session has been cleared.');
+    Alert.alert(t.loggedOutTitle, t.loggedOutMessage);
     router.replace('/(auth)/login');
   };
 
@@ -107,14 +161,14 @@ export default function ProfileScreen() {
     profile?.full_name?.trim() ||
     profile?.username?.trim() ||
     emailFallback ||
-    'User';
+    t.user;
 
   const renderContent = () => {
     if (loading) {
       return (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.subtle}>Loading profile...</Text>
+          <Text style={styles.subtle}>{t.loading}</Text>
         </View>
       );
     }
@@ -122,10 +176,10 @@ export default function ProfileScreen() {
     if (!isAuthenticated) {
       return (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Session expired</Text>
-          <Text style={styles.cardText}>Please log in again to view your profile.</Text>
+          <Text style={styles.cardTitle}>{t.sessionExpired}</Text>
+          <Text style={styles.cardText}>{t.relogin}</Text>
           <TouchableOpacity style={styles.button} onPress={() => router.replace('/(auth)/login')}>
-            <Text style={styles.buttonText}>Go to Login</Text>
+            <Text style={styles.buttonText}>{t.goToLogin}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -134,10 +188,10 @@ export default function ProfileScreen() {
     if (error) {
       return (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Something went wrong</Text>
+          <Text style={styles.cardTitle}>{t.somethingWrong}</Text>
           <Text style={styles.cardText}>{error}</Text>
           <TouchableOpacity style={styles.button} onPress={() => fetchProfile()}>
-            <Text style={styles.buttonText}>Try again</Text>
+            <Text style={styles.buttonText}>{t.tryAgain}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -145,13 +199,20 @@ export default function ProfileScreen() {
 
     return (
       <View style={styles.card}>
-        <Text style={styles.name}>{displayName}</Text>
-        <Text style={styles.row}>Username: {profile?.username || '-'}</Text>
-        <Text style={styles.row}>Email: {profile?.email || '-'}</Text>
-        <Text style={styles.row}>Phone: {profile?.phone_number || profile?.phone || '-'}</Text>
+        <Text style={styles.row}>{`${t.fullName}: ${profile?.full_name || '-'}`}</Text>
+        <Text style={styles.row}>{`${t.dob}: ${profile?.date_of_birth || '-'}`}</Text>
+        <Text style={styles.row}>{`${t.username}: ${profile?.username || '-'}`}</Text>
+        <Text style={styles.row}>{`${t.address}: ${profile?.address || '-'}`}</Text>
+        <Text style={styles.row}>{`${t.sex}: ${profile?.sex || '-'}`}</Text>
+        <Text style={styles.row}>{`${t.district}: ${profile?.district || '-'}`}</Text>
+        <Text style={styles.row}>{`${t.province}: ${profile?.province || '-'}`}</Text>
+        <Text style={styles.row}>{`${t.stateNo}: ${profile?.state_no || '-'}`}</Text>
+        <Text style={styles.row}>{`${t.bloodGroup}: ${profile?.blood_group || '-'}`}</Text>
+        <Text style={styles.row}>{`${t.email}: ${profile?.email || '-'}`}</Text>
+        <Text style={styles.row}>{`${t.phone}: ${profile?.phone_number || profile?.phone || '-'}`}</Text>
 
         <TouchableOpacity style={styles.buttonSecondary} onPress={handleLogout}>
-          <Text style={styles.buttonText}>Logout</Text>
+          <Text style={styles.buttonText}>{t.logout}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -177,8 +238,8 @@ export default function ProfileScreen() {
         }
       >
         <View style={styles.titleWrap}>
-          <Text style={styles.title}>Profile</Text>
-          <Text style={styles.subtitle}>Account And Session Details</Text>
+          <Text style={styles.title}>{t.title}</Text>
+          <Text style={styles.subtitle}>{t.subtitle}</Text>
         </View>
 
         {renderContent()}

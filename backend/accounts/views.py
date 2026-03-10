@@ -100,9 +100,10 @@ class IsAdminUser(permissions.BasePermission):
 @permission_classes([IsAdminUser])
 def admin_list_users(request):
 	"""List all users with their basic info."""
-	users = User.objects.all().order_by('-date_joined')
+	users = User.objects.all().order_by('-date_joined').select_related('profile')
 	data = []
 	for user in users:
+		profile, _ = ClientProfile.objects.get_or_create(user=user)
 		data.append({
 			'id': user.id,
 			'username': user.username,
@@ -111,6 +112,13 @@ def admin_list_users(request):
 			'role': user.role,
 			'is_active': user.is_active,
 			'date_joined': user.date_joined,
+			'date_of_birth': profile.date_of_birth,
+			'address': profile.address,
+			'sex': profile.sex,
+			'district': profile.district,
+			'province': profile.province,
+			'state_no': profile.state_no,
+			'blood_group': profile.blood_group,
 			'has_push_token': DeviceToken.objects.filter(user=user).exists(),
 		})
 	return Response(data)
@@ -134,8 +142,14 @@ def admin_get_user(request, user_id):
 		'role': user.role,
 		'is_active': user.is_active,
 		'date_joined': user.date_joined,
+		'date_of_birth': profile.date_of_birth,
 		'full_name': profile.full_name,
 		'address': profile.address,
+		'sex': profile.sex,
+		'district': profile.district,
+		'province': profile.province,
+		'state_no': profile.state_no,
+		'blood_group': profile.blood_group,
 		'emergency_contact': profile.emergency_contact,
 		'vibration_alerts_enabled': user.vibration_alerts_enabled,
 		'has_push_token': DeviceToken.objects.filter(user=user).exists(),
@@ -162,6 +176,24 @@ def admin_update_user(request, user_id):
 		user.is_active = request.data['is_active']
 
 	user.save()
+
+	profile, _ = ClientProfile.objects.get_or_create(user=user)
+	if 'address' in request.data:
+		profile.address = request.data['address']
+	if 'date_of_birth' in request.data:
+		profile.date_of_birth = request.data['date_of_birth'] or None
+	if 'sex' in request.data:
+		profile.sex = request.data['sex']
+	if 'district' in request.data:
+		profile.district = request.data['district']
+	if 'province' in request.data:
+		profile.province = request.data['province']
+	if 'state_no' in request.data:
+		profile.state_no = request.data['state_no']
+	if 'blood_group' in request.data:
+		profile.blood_group = request.data['blood_group']
+	profile.save()
+
 	return Response({'success': True, 'message': f'User {user.username} updated'})
 
 

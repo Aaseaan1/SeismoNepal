@@ -1,16 +1,47 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View, Switch } from 'react-native';
 import { useState, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 import AsyncStorage from '../../lib/storage';
+
+const LANGUAGE_KEY = 'appLanguage';
 
 export default function SettingsScreen() {
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [shakeEnabled, setShakeEnabled] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [language, setLanguage] = useState<'en' | 'ne'>('en');
 
   useEffect(() => {
     loadSettings();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const loadLanguage = async () => {
+        try {
+          const savedLanguage = await AsyncStorage.getItem(LANGUAGE_KEY);
+          if (savedLanguage === 'en' || savedLanguage === 'ne') {
+            setLanguage(savedLanguage);
+          }
+        } catch (error) {
+          console.warn('Error loading language preference:', error);
+        }
+      };
+
+      void loadLanguage();
+    }, [])
+  );
+
+  const t = {
+    title: language === 'ne' ? 'सिस्टम प्राथमिकता' : 'System Preference',
+    vibration: language === 'ne' ? 'भाइब्रेशन सक्रिय गर्नुहोस्' : 'Activate Vibration',
+    shake: language === 'ne' ? 'शेक सक्रिय गर्नुहोस्' : 'Activate Shake',
+    sound: language === 'ne' ? 'ध्वनि सक्रिय गर्नुहोस्' : 'Activate Sound',
+    version: language === 'ne' ? 'संस्करण' : 'Version',
+    developer: language === 'ne' ? 'डेभलपर' : 'Developer',
+  };
 
   const loadSettings = async () => {
     try {
@@ -51,10 +82,10 @@ export default function SettingsScreen() {
       />
 
       <View style={styles.content}>
-        <Text style={styles.sectionTitle}>System Preference</Text>
+        <Text style={styles.sectionTitle}>{t.title}</Text>
 
         <View style={styles.settingItem}>
-          <Text style={styles.label}>Activate Vibration</Text>
+          <Text style={styles.label}>{t.vibration}</Text>
           <Switch
             value={vibrationEnabled}
             onValueChange={saveVibration}
@@ -64,7 +95,7 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.settingItem}>
-          <Text style={styles.label}>Activate Shake</Text>
+          <Text style={styles.label}>{t.shake}</Text>
           <Switch
             value={shakeEnabled}
             onValueChange={saveShake}
@@ -74,7 +105,7 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.settingItem}>
-          <Text style={styles.label}>Activate Sound</Text>
+          <Text style={styles.label}>{t.sound}</Text>
           <Switch
             value={soundEnabled}
             onValueChange={saveSound}
@@ -85,8 +116,8 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Version: 1.0</Text>
-        <Text style={styles.footerText}>Developer: Aaseaan Siwakoti</Text>
+        <Text style={styles.footerText}>{`${t.version}: 1.0`}</Text>
+        <Text style={styles.footerText}>{`${t.developer}: SeismoNep Team`}</Text>
       </View>
     </View>
   );

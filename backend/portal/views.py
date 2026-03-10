@@ -26,10 +26,16 @@ def portal_home(request):
 	return redirect('client-dashboard')
 
 
+def safety_measures(request):
+	return render(request, 'portal/safety_measures.html')
+
+
 @login_required
 @user_passes_test(is_admin_portal_user)
 def admin_dashboard(request):
-	users = User.objects.all().order_by('username')
+	users = User.objects.select_related('profile').all().order_by('username')
+	for user in users:
+		ClientProfile.objects.get_or_create(user=user)
 	return render(request, 'portal/admin_dashboard.html', {'users': users})
 
 
@@ -38,12 +44,24 @@ def admin_dashboard(request):
 def admin_update_user(request, user_id):
 	if request.method == 'POST':
 		user = get_object_or_404(User, pk=user_id)
+		profile, _ = ClientProfile.objects.get_or_create(user=user)
 		user.email = request.POST.get('email', user.email)
 		user.phone_number = request.POST.get('phone_number', user.phone_number)
 		user.is_active = request.POST.get('is_active') == 'on'
 		user.role = request.POST.get('role', user.role)
 		user.is_staff = user.role == User.Roles.ADMIN
 		user.save()
+
+		profile.address = request.POST.get('address', profile.address)
+		profile.full_name = request.POST.get('full_name', profile.full_name)
+		profile.date_of_birth = request.POST.get('date_of_birth') or None
+		profile.sex = request.POST.get('sex', profile.sex)
+		profile.district = request.POST.get('district', profile.district)
+		profile.province = request.POST.get('province', profile.province)
+		profile.state_no = request.POST.get('state_no', profile.state_no)
+		profile.blood_group = request.POST.get('blood_group', profile.blood_group)
+		profile.save()
+
 		messages.success(request, f'Updated user: {user.username}')
 	return redirect('admin-dashboard')
 

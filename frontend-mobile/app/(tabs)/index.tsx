@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, Text, View, Image } from 'react-native';
+import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { sendEmergencyAlert } from '../../utils/sendEmergencyAlert';
+import AsyncStorage from '../../lib/storage';
 
 import { API_BASE_URL } from '../../lib/api';
 
@@ -31,6 +33,7 @@ const NEPAL_BOUNDS = {
 const BLOCKED_PLACE_PATTERN = /(india|china|southern tibetan plateau|tibetan plateau|xizang)/i;
 const MIN_SPLASH_MS = 2500;
 const ALERT_MIN_MAGNITUDE = 4.0;
+const LANGUAGE_KEY = 'appLanguage';
 
 const extractDistrict = (place: string) => {
   const m1 = place.match(/of\s+([^,]+),\s*Nepal/i);
@@ -53,8 +56,10 @@ function StatCard({ icon, value, label }: StatCardProps) {
 }
 
 export default function HomeScreen() {
+  const router = useRouter();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [language, setLanguage] = useState<'en' | 'ne'>('en');
   const lastAlertedEventId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -66,6 +71,30 @@ export default function HomeScreen() {
       await Notifications.requestPermissionsAsync();
     })();
   }, []);
+
+  useEffect(() => {
+    const loadLanguage = async () => {
+      try {
+        const savedLanguage = await AsyncStorage.getItem(LANGUAGE_KEY);
+        if (savedLanguage === 'en' || savedLanguage === 'ne') {
+          setLanguage(savedLanguage);
+        }
+      } catch (error) {
+        console.warn('Failed to load language preference:', error);
+      }
+    };
+
+    loadLanguage();
+  }, []);
+
+  const setLanguageAndPersist = async (value: 'en' | 'ne') => {
+    setLanguage(value);
+    try {
+      await AsyncStorage.setItem(LANGUAGE_KEY, value);
+    } catch (error) {
+      console.warn('Failed to save language preference:', error);
+    }
+  };
 
   useEffect(() => {
     if (loading || events.length === 0) return;
@@ -207,6 +236,14 @@ export default function HomeScreen() {
     ? (events.reduce((sum, event) => sum + Number(event.magnitude || 0), 0) / events.length).toFixed(1)
     : '0.0';
 
+  const titleText = language === 'ne' ? 'ड्यासबोर्ड' : 'Dashboard';
+  const subtitleText =
+    language === 'ne' ? 'नेपालमा भूकम्प गतिविधि निगरानी' : 'Monitor Earthquake Activity In Nepal';
+  const monthLabel = language === 'ne' ? 'यस महिना' : 'This Month';
+  const todayLabel = language === 'ne' ? 'आज' : 'Today';
+  const avgLabel = language === 'ne' ? 'औसत म्याग्निच्युड' : 'Avg Magnitude';
+  const safetyButtonText = language === 'ne' ? 'सुरक्षा उपायहरू' : 'Safety Measures';
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -217,14 +254,37 @@ export default function HomeScreen() {
       />
 
       <View style={styles.content}>
-        <Text style={styles.title}>Dashboard</Text>
-        <Text style={styles.subtitle}>Monitor Earthquake Activity In Nepal</Text>
+        <View style={styles.languageToggleRow}>
+          <TouchableOpacity
+            style={[styles.languageToggleButton, language === 'en' && styles.languageToggleButtonActive]}
+            onPress={() => void setLanguageAndPersist('en')}
+          >
+            <Text style={[styles.languageToggleText, language === 'en' && styles.languageToggleTextActive]}>
+              English
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.languageToggleButton, language === 'ne' && styles.languageToggleButtonActive]}
+            onPress={() => void setLanguageAndPersist('ne')}
+          >
+            <Text style={[styles.languageToggleText, language === 'ne' && styles.languageToggleTextActive]}>
+              नेपाली
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.title}>{titleText}</Text>
+        <Text style={styles.subtitle}>{subtitleText}</Text>
 
         <View style={styles.statsRow}>
-          <StatCard icon="trending-up-outline" value={String(monthlyCount)} label="This Month" />
-          <StatCard icon="calendar-outline" value={String(todayCount)} label="Today" />
-          <StatCard icon="speedometer-outline" value={averageMagnitude} label="Avg Magnitude" />
+          <StatCard icon="trending-up-outline" value={String(monthlyCount)} label={monthLabel} />
+          <StatCard icon="calendar-outline" value={String(todayCount)} label={todayLabel} />
+          <StatCard icon="speedometer-outline" value={averageMagnitude} label={avgLabel} />
         </View>
+
+        <TouchableOpacity style={styles.safetyButton} onPress={() => router.push('/safetymeasures')}>
+          <Text style={styles.safetyButtonText}>{safetyButtonText}</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -259,6 +319,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     justifyContent: 'center',
   },
+  languageToggleRow: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    borderRadius: 999,
+    padding: 4,
+    marginBottom: 16,
+  },
+  languageToggleButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+  },
+  languageToggleButtonActive: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+  },
+  languageToggleText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  languageToggleTextActive: {
+    color: '#6b0000',
+  },
   title: {
     color: '#fff',
     fontSize: 62,
@@ -277,6 +363,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 10,
+  },
+  safetyButton: {
+    marginTop: 16,
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.45)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+  },
+  safetyButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '800',
+    textAlign: 'center',
   },
   statCard: {
     flex: 1,

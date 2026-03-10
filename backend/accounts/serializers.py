@@ -45,7 +45,13 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = (
             'username',
             'full_name',
+            'date_of_birth',
             'address',
+            'sex',
+            'district',
+            'province',
+            'state_no',
+            'blood_group',
             'emergency_contact',
             'email',
             'phone_number',

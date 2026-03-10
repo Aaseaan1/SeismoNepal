@@ -1,8 +1,11 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View, FlatList, ActivityIndicator } from 'react-native';
 import { useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 import { API_BASE_URL } from '../../lib/api';
+import AsyncStorage from '../../lib/storage';
 
 type EventItem = {
   id: string;
@@ -20,6 +23,7 @@ const NEPAL_BOUNDS = {
 };
 
 const BLOCKED_PLACE_PATTERN = /(india|china|southern tibetan plateau|tibetan plateau|xizang)/i;
+const LANGUAGE_KEY = 'appLanguage';
 
 const extractDistrict = (place: string) => {
   // Example: "15 km N of Ilam, Nepal" -> "Ilam"
@@ -37,9 +41,36 @@ export default function SearchScreen() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [language, setLanguage] = useState<'en' | 'ne'>('en');
+  const [liveVisible, setLiveVisible] = useState(true);
 
   useEffect(() => {
     fetchEvents();
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const loadLanguage = async () => {
+        try {
+          const savedLanguage = await AsyncStorage.getItem(LANGUAGE_KEY);
+          if (savedLanguage === 'en' || savedLanguage === 'ne') {
+            setLanguage(savedLanguage);
+          }
+        } catch (loadError) {
+          console.warn('Failed to load language preference:', loadError);
+        }
+      };
+
+      void loadLanguage();
+    }, [])
+  );
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLiveVisible((prev) => !prev);
+    }, 700);
+
+    return () => clearInterval(timer);
   }, []);
 
   const fetchEvents = async () => {
@@ -126,7 +157,7 @@ export default function SearchScreen() {
 
   const formatDate = (value: string) => {
     const date = new Date(value);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(language === 'ne' ? 'ne-NP' : 'en-US', {
       month: 'short',
       day: '2-digit',
       year: 'numeric',
@@ -138,6 +169,17 @@ export default function SearchScreen() {
     return value.toFixed(1);
   };
 
+  const titleText = language === 'ne' ? 'नेपालका भूकम्पहरू' : 'Nepal Earthquakes';
+  const countText = language === 'ne' ? `कुल घटना: ${events.length}` : `Total events: ${events.length}`;
+  const loadingText = language === 'ne' ? 'डेटा लोड हुँदैछ...' : 'Loading...';
+  const errorPrefix = language === 'ne' ? 'त्रुटि' : 'Error';
+  const emptyText =
+    language === 'ne'
+      ? 'छानिएको अवधिमा कुनै भूकम्प डेटा फेला परेन।'
+      : 'No earthquake data found for selected period.';
+  const magnitudeLabel = language === 'ne' ? 'म्याग्निच्युड' : 'Magnitude';
+  const dateLabel = language === 'ne' ? 'मिति' : 'Date';
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -147,24 +189,33 @@ export default function SearchScreen() {
         style={styles.gradientBackground}
       />
 
-      <Text style={styles.title}>Nepal Earthquakes</Text>
-      <Text style={styles.count}>Total events: {events.length}</Text>
+      <Text style={styles.title}>{titleText}</Text>
+      <View style={styles.liveRow}>
+        <View style={[styles.liveDot, !liveVisible && styles.liveDotHidden]} />
+        <Text style={styles.liveText}>LIVE</Text>
+      </View>
+      <Text style={styles.count}>{countText}</Text>
 
-      {loading ? <ActivityIndicator size="large" color="#fff" style={styles.loader} /> : null}
-      {error ? <Text style={styles.error}>Error: {error}</Text> : null}
+      {loading ? (
+        <View style={styles.loaderWrap}>
+          <ActivityIndicator size="large" color="#fff" style={styles.loader} />
+          <Text style={styles.loaderText}>{loadingText}</Text>
+        </View>
+      ) : null}
+      {error ? <Text style={styles.error}>{`${errorPrefix}: ${error}`}</Text> : null}
 
       <FlatList
         data={events}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={
-          !loading ? <Text style={styles.empty}>No earthquake data found for selected period.</Text> : null
+          !loading ? <Text style={styles.empty}>{emptyText}</Text> : null
         }
         renderItem={({ item }) => (
           <View style={styles.resultCard}>
             <Text style={styles.location}>{item.location}</Text>
-            <Text style={styles.meta}>Magnitude: {formatMagnitude(item.magnitude)}</Text>
-            <Text style={styles.date}>Date: {formatDate(item.occurred_at)}</Text>
+            <Text style={styles.meta}>{`${magnitudeLabel}: ${formatMagnitude(item.magnitude)}`}</Text>
+            <Text style={styles.date}>{`${dateLabel}: ${formatDate(item.occurred_at)}`}</Text>
           </View>
         )}
       />
@@ -193,8 +244,39 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 8,
   },
+  liveRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  liveDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: '#ff2a2a',
+  },
+  liveDotHidden: {
+    opacity: 0.25,
+    transform: [{ scale: 0.72 }],
+  },
+  liveText: {
+    color: '#ffd6d6',
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+  },
   loader: {
     marginTop: 20,
+  },
+  loaderWrap: {
+    alignItems: 'center',
+  },
+  loaderText: {
+    color: '#fff',
+    marginTop: 8,
+    fontWeight: '700',
   },
   error: {
     color: '#ffd6d6',
