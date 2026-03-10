@@ -1,0 +1,3 @@
+#!/bin/sh
+echo "watchman disabled for expo" >&2
+exit 127
