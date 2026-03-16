@@ -117,7 +117,7 @@ export default function SettingsScreen() {
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>{`${t.version}: 1.0`}</Text>
-        <Text style={styles.footerText}>{`${t.developer}: SeismoNep Team`}</Text>
+        <Text style={styles.footerText}>{`${t.developer}: AASEAAN SIWAKOTI`}</Text>
       </View>
     </View>
   );

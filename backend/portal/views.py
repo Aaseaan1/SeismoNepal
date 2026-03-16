@@ -109,6 +109,33 @@ def admin_send_test_push(request, user_id):
 
 
 @login_required
+@user_passes_test(is_admin_portal_user)
+def admin_send_test_push_all(request):
+    if request.method == 'POST':
+        users = User.objects.filter(is_active=True)
+        sent_count = 0
+        fail_count = 0
+        for user in users:
+            has_device = DeviceToken.objects.filter(user=user).exists()
+            if not has_device:
+                continue
+            notification = AlertNotification.objects.create(
+                user=user,
+                channel=AlertNotification.Channels.APP,
+                message=f'Admin test push at {timezone.now().strftime("%Y-%m-%d %H:%M:%S UTC")}',
+            )
+            if dispatch_notification(notification):
+                sent_count += 1
+            else:
+                fail_count += 1
+        if sent_count:
+            messages.success(request, f'Test push sent to {sent_count} users.')
+        if fail_count:
+            messages.error(request, f'Push delivery failed for {fail_count} users. Check Expo token and backend config.')
+    return redirect('admin-dashboard')
+
+
+@login_required
 def client_dashboard(request):
 	profile, _ = ClientProfile.objects.get_or_create(user=request.user)
 

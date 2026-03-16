@@ -211,7 +211,7 @@ export default function HomeScreen() {
             style={styles.splashMap}
             resizeMode="contain"
           />
-          <Text style={styles.splashTitle}>SeismoNep</Text>
+          <Text style={styles.splashTitle}>SeismoNepal</Text>
         </View>
       </View>
     );

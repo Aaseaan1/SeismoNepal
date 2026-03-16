@@ -109,15 +109,15 @@
                 {% csrf_token %}
                 <button type="submit" class="btn-danger" onclick="return confirm('Delete user {{ user.username }}?')">Delete</button>
               </form>
-              <form method="post" action="/portal/admin/user/{{ user.id }}/test-push/">
-                {% csrf_token %}
-                <button type="submit">Test Push</button>
-              </form>
             </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
+      <form method="post" action="/portal/admin/test-push-all/" style="margin-top: 20px; text-align: right;">
+        {% csrf_token %}
+        <button type="submit" class="btn-primary">Test Push (All Users)</button>
+      </form>
     </div>
   </div>
 </body>
