@@ -1,4 +1,4 @@
-# SeismoNep (Fresh Start)
+# SeismoNepal (Fresh Start)
 
 This project has been reset and rebuilt with:
 
