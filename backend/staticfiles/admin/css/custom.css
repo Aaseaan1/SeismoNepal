@@ -1,0 +1,31 @@
+/* Black to Red Gradient Background */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(to bottom, #000000 0%, #cc0000 100%) !important;
+    min-height: 100vh;
+}
+
+body {
+    background-attachment: fixed;
+}
+
+/* Dark overlay for content readability */
+#content {
+    background-color: rgba(0, 0, 0, 0.85);
+}
+
+#header {
+    background: rgba(0, 0, 0, 0.9);
+    border-bottom: 2px solid #cc0000;
+}
+
+#sidebar {
+    background: rgba(0, 0, 0, 0.95);
+}
+
+/* Ensure main container is transparent */
+#container {
+    background: transparent;
+}

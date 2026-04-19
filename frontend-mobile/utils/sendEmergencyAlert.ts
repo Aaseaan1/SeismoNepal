@@ -36,6 +36,14 @@ const formatNPT = (iso: string) => {
 };
 
 export async function sendEmergencyAlert(eq: EqAlert) {
+  const permissions = await Notifications.getPermissionsAsync();
+  if (!permissions.granted) {
+    const requested = await Notifications.requestPermissionsAsync();
+    if (!requested.granted) {
+      return;
+    }
+  }
+
   const { date, time } = formatNPT(eq.occurredAtISO);
 
   await Notifications.scheduleNotificationAsync({

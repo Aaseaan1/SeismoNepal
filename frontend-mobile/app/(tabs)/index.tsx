@@ -3,7 +3,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import * as Notifications from 'expo-notifications';
 import { sendEmergencyAlert } from '../../utils/sendEmergencyAlert';
 import AsyncStorage from '../../lib/storage';
 
@@ -31,9 +30,27 @@ const NEPAL_BOUNDS = {
 };
 
 const BLOCKED_PLACE_PATTERN = /(india|china|southern tibetan plateau|tibetan plateau|xizang)/i;
-const MIN_SPLASH_MS = 2500;
 const ALERT_MIN_MAGNITUDE = 4.0;
 const LANGUAGE_KEY = 'appLanguage';
+const EVENTS_CACHE_KEY = 'dashboardEventsCacheV2';
+const REQUEST_TIMEOUT_MS = 4500;
+const MIN_SPLASH_MS = 1400;
+const USGS_FALLBACK_START_DATE = '2006-01-01';
+const USGS_FALLBACK_END_DATE = '2026-12-31';
+const USGS_FALLBACK_LIMIT = 1200;
+
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+const fetchWithTimeout = async (url: string, timeoutMs: number) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
 
 const extractDistrict = (place: string) => {
   const m1 = place.match(/of\s+([^,]+),\s*Nepal/i);
@@ -63,13 +80,35 @@ export default function HomeScreen() {
   const lastAlertedEventId = useRef<string | null>(null);
 
   useEffect(() => {
-    fetchEarthquakes();
-  }, []);
+    const bootstrapDashboard = async () => {
+      const splashStart = Date.now();
+      let hasCachedData = false;
 
-  useEffect(() => {
-    (async () => {
-      await Notifications.requestPermissionsAsync();
-    })();
+      try {
+        const rawCachedEvents = await AsyncStorage.getItem(EVENTS_CACHE_KEY);
+        if (rawCachedEvents) {
+          const parsedEvents = JSON.parse(rawCachedEvents) as EventItem[];
+          if (Array.isArray(parsedEvents) && parsedEvents.length > 0) {
+            setEvents(parsedEvents);
+            hasCachedData = true;
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to load cached dashboard events:', error);
+      }
+
+      if (hasCachedData) {
+        const elapsed = Date.now() - splashStart;
+        if (elapsed < MIN_SPLASH_MS) {
+          await wait(MIN_SPLASH_MS - elapsed);
+        }
+        setLoading(false);
+      }
+
+      await fetchEarthquakes(!hasCachedData);
+    };
+
+    void bootstrapDashboard();
   }, []);
 
   useEffect(() => {
@@ -118,15 +157,25 @@ export default function HomeScreen() {
     });
   }, [events, loading]);
 
-  const fetchEarthquakes = async () => {
-    const splashDelay = new Promise<void>((resolve) => setTimeout(resolve, MIN_SPLASH_MS));
+  const persistEvents = async (nextEvents: EventItem[]) => {
+    try {
+      await AsyncStorage.setItem(EVENTS_CACHE_KEY, JSON.stringify(nextEvents));
+    } catch (error) {
+      console.warn('Failed to cache dashboard events:', error);
+    }
+  };
+
+  const fetchEarthquakes = async (showLoader: boolean) => {
+    if (showLoader) {
+      setLoading(true);
+    }
 
     try {
       const backendUrl = `${API_BASE_URL}/api/scraper/events/`;
 
       let backendEvents: EventItem[] = [];
       try {
-        const response = await fetch(backendUrl);
+        const response = await fetchWithTimeout(backendUrl, REQUEST_TIMEOUT_MS);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         backendEvents = (Array.isArray(data) ? data : []).map((item: any) => {
@@ -145,19 +194,20 @@ export default function HomeScreen() {
 
       if (backendEvents.length > 0) {
         setEvents(backendEvents);
+        await persistEvents(backendEvents);
         return;
       }
 
-      const startDate = '2020-01-01';
-      const endDate = new Date().toISOString().slice(0, 10);
+      const startDate = USGS_FALLBACK_START_DATE;
+      const endDate = USGS_FALLBACK_END_DATE;
       const usgsUrl =
         `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson` +
         `&minlatitude=${NEPAL_BOUNDS.minLat}&maxlatitude=${NEPAL_BOUNDS.maxLat}` +
         `&minlongitude=${NEPAL_BOUNDS.minLon}&maxlongitude=${NEPAL_BOUNDS.maxLon}` +
         `&starttime=${startDate}&endtime=${endDate}` +
-        `&orderby=time&limit=5000`;
+        `&orderby=time&limit=${USGS_FALLBACK_LIMIT}`;
 
-      const usgsResponse = await fetch(usgsUrl);
+      const usgsResponse = await fetchWithTimeout(usgsUrl, REQUEST_TIMEOUT_MS);
       if (!usgsResponse.ok) throw new Error(`USGS HTTP ${usgsResponse.status}`);
       const usgsData = await usgsResponse.json();
 
@@ -187,12 +237,16 @@ export default function HomeScreen() {
           };
         });
 
-      setEvents(usgsEvents);
+      if (usgsEvents.length > 0) {
+        setEvents(usgsEvents);
+        await persistEvents(usgsEvents);
+      }
     } catch (error) {
       console.error('Error fetching earthquakes:', error);
     } finally {
-      await splashDelay; // keep splash visible for at least MIN_SPLASH_MS
-      setLoading(false);
+      if (showLoader) {
+        setLoading(false);
+      }
     }
   };
 

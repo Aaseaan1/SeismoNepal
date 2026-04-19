@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
-import { Platform, View } from 'react-native';
+import { Platform, View, Alert } from 'react-native';
 import { Stack } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
+
+
 
 // Keep splash visible until the root view is mounted.
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -28,6 +30,11 @@ export default function RootLayout() {
 
   const handleLayout = () => {
     SplashScreen.hideAsync().catch(() => undefined);
+  };
+
+  const handleLocationPress = () => {
+    Alert.alert('Location Button', 'You pressed the location button!');
+    // TODO: Replace with your location logic
   };
 
   return (

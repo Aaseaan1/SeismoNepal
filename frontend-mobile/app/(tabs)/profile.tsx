@@ -113,9 +113,7 @@ export default function ProfileScreen() {
       setIsAuthenticated(true);
 
       // Best-effort background token registration for sessions restored from storage.
-      registerDeviceToken(token).catch((err) => {
-        console.warn('Push token registration skipped from profile sync:', err);
-      });
+      void registerDeviceToken(token).catch(() => undefined);
 
       const response = await fetch(`${API_BASE_URL}/api/accounts/profile/`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -163,6 +161,14 @@ export default function ProfileScreen() {
     emailFallback ||
     t.user;
 
+  const formatSex = (value?: string) => {
+    if (!value) return '-';
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'male') return 'Male';
+    if (normalized === 'female') return 'Female';
+    return value;
+  };
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -203,7 +209,7 @@ export default function ProfileScreen() {
         <Text style={styles.row}>{`${t.dob}: ${profile?.date_of_birth || '-'}`}</Text>
         <Text style={styles.row}>{`${t.username}: ${profile?.username || '-'}`}</Text>
         <Text style={styles.row}>{`${t.address}: ${profile?.address || '-'}`}</Text>
-        <Text style={styles.row}>{`${t.sex}: ${profile?.sex || '-'}`}</Text>
+        <Text style={styles.row}>{`${t.sex}: ${formatSex(profile?.sex)}`}</Text>
         <Text style={styles.row}>{`${t.district}: ${profile?.district || '-'}`}</Text>
         <Text style={styles.row}>{`${t.province}: ${profile?.province || '-'}`}</Text>
         <Text style={styles.row}>{`${t.stateNo}: ${profile?.state_no || '-'}`}</Text>

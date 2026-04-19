@@ -1,0 +1,286 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}Client Profile{% endblock %}
+
+{% block extrahead %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    #header,
+    #nav-sidebar,
+    .breadcrumbs,
+    #toggle-nav-sidebar {
+        display: none !important;
+    }
+
+    #main,
+    #content {
+        margin-left: 0 !important;
+    }
+
+    .page-wrap {
+        padding: 24px;
+        background: linear-gradient(to bottom, #000000 0%, #ff0000 100%);
+        min-height: calc(100vh - 48px);
+        border-radius: 10px;
+    }
+
+    .dashboard-navbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        background: #101722;
+        border: 1px solid rgba(255, 255, 255, 0.9);
+        border-radius: 10px;
+        padding: 18px 22px;
+        margin-bottom: 18px;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.45), 0 2px 8px rgba(7, 12, 20, 0.35);
+    }
+
+    .navbar-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #f5f8ff;
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+    }
+
+    .navbar-brand i {
+        color: #ff4d4d;
+        font-size: 22px;
+    }
+
+    .navbar-links {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .navbar-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #d9e6ff;
+        font-size: 15px;
+        font-weight: 700;
+        border: 1px solid #31445f;
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .navbar-link:hover {
+        background: rgba(35, 144, 255, 0.16);
+        border-color: #4f9cff;
+        color: #ffffff;
+    }
+
+    .surface {
+        background: #f4f7fb;
+        border: 1px solid #d3dbe7;
+        border-radius: 8px;
+        padding: 20px;
+    }
+
+    .title {
+        margin: 0 0 12px 0;
+        color: #2a3342;
+        font-size: 32px;
+        font-weight: 600;
+    }
+
+    .table-wrap {
+        overflow: auto;
+        border: 1px solid #d3dbe7;
+        border-radius: 8px;
+        background: #ffffff;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        color: #111827;
+        background: #ffffff;
+        min-width: 920px;
+    }
+
+    th {
+        background: #ffffff;
+        color: #111827;
+        text-align: left;
+        padding: 10px;
+        border-bottom: 1px solid #d3dbe7;
+        font-size: 18px;
+    }
+
+    td {
+        background: #ffffff;
+        color: #111827;
+        padding: 10px;
+        border-bottom: 1px solid #edf1f7;
+        font-size: 18px;
+    }
+
+    .action-cell {
+        white-space: nowrap;
+    }
+
+    .action-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        border-radius: 6px;
+        background: #1f2937;
+        border: 1px solid #111827;
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .action-btn:hover {
+        background: #111827;
+        color: #ffffff;
+    }
+
+    .action-btn-delete {
+        background: #b91c1c;
+        border-color: #991b1b;
+    }
+
+    .action-btn-delete:hover {
+        background: #991b1b;
+        color: #ffffff;
+    }
+
+    tr:hover {
+        background: #f8fbff;
+    }
+
+    .empty {
+        padding: 18px;
+        text-align: center;
+        color: #67748a;
+        font-weight: 600;
+    }
+
+    @media (max-width: 720px) {
+        .dashboard-navbar {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .navbar-links {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+    <div class="dashboard-navbar">
+        <div class="navbar-brand">
+            <i class="fas fa-wave-square"></i>
+            <span>SeismoNepal Admin</span>
+        </div>
+        <div class="navbar-links">
+            <a class="navbar-link" href="/admin/">
+                <i class="fas fa-table-columns"></i>
+                <span>Dashboard</span>
+            </a>
+            <a class="navbar-link" href="/admin/client-profile/">
+                <i class="fas fa-users"></i>
+                <span>Client Info</span>
+            </a>
+            <a class="navbar-link" href="/admin/earthquake-data/">
+                <i class="fas fa-chart-line"></i>
+                <span>Earthquake Data</span>
+            </a>
+            <a class="navbar-link" href="{% url 'portal-logout' %}">
+                <i class="fas fa-right-from-bracket"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="surface">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+            <h1 class="title mb-0">Client Profiles</h1>
+            <a class="action-btn" href="/admin/client-profile/add/">
+                <i class="fas fa-plus"></i>
+                <span>Add Profile</span>
+            </a>
+        </div>
+
+        <div class="table-wrap">
+            {% if profiles %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Full Name</th>
+                            <th>DOB</th>
+                            <th>Username</th>
+                            <th>Address</th>
+                            <th>Sex</th>
+                            <th>District</th>
+                            <th>Province</th>
+                            <th>State No</th>
+                            <th>Blood Group</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for profile in profiles %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ profile.full_name|default:'-' }}</td>
+                                <td>{{ profile.date_of_birth|date:'Y-m-d'|default:'-' }}</td>
+                                <td>{{ profile.user.username }}</td>
+                                <td>{{ profile.address|default:'-' }}</td>
+                                <td>{{ profile.get_sex_display|default:'-' }}</td>
+                                <td>{{ profile.district|default:'-' }}</td>
+                                <td>{{ profile.province|default:'-' }}</td>
+                                <td>{{ profile.state_no|default:'-' }}</td>
+                                <td>{{ profile.blood_group|default:'-' }}</td>
+                                <td>{{ profile.user.email|default:'-' }}</td>
+                                <td>{{ profile.user.phone_number|default:'-' }}</td>
+                                <td class="action-cell">
+                                    <div class="action-group">
+                                        <a class="action-btn" href="/admin/client-profile/edit/{{ profile.id }}/">
+                                            <i class="fas fa-pen-to-square"></i>
+                                            <span>Edit</span>
+                                        </a>
+                                        <a class="action-btn action-btn-delete" href="/admin/client-profile/delete/{{ profile.id }}/">
+                                            <i class="fas fa-trash"></i>
+                                            <span>Delete</span>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty">No client profiles available.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

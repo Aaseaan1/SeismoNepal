@@ -1,0 +1,693 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}SeismoNepal Dashboard{% endblock %}
+
+{% block extrahead %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Hide default Django admin navbar UI so only custom dashboard layout is shown */
+        #header,
+        #nav-sidebar,
+        .breadcrumbs,
+        #toggle-nav-sidebar {
+            display: none !important;
+        }
+
+        #main,
+        #content {
+            margin-left: 0 !important;
+        }
+
+        .dashboard-container {
+            padding: 24px;
+            background: linear-gradient(to bottom, #000000 0%, #ff0000 100%);
+            min-height: calc(100vh - 48px);
+            border-radius: 10px;
+        }
+
+        .dashboard-navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            background: #101722;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 18px 22px;
+            margin-bottom: 18px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.45), 0 2px 8px rgba(7, 12, 20, 0.35);
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #f5f8ff;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+
+        .navbar-brand i {
+            color: #ff4d4d;
+            font-size: 22px;
+        }
+
+        .navbar-links {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .navbar-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #d9e6ff;
+            font-size: 15px;
+            font-weight: 700;
+            border: 1px solid #31445f;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .navbar-link:hover {
+            background: rgba(35, 144, 255, 0.16);
+            border-color: #4f9cff;
+            color: #ffffff;
+        }
+
+        .dashboard-surface {
+            background: #e7ebf0;
+            border: 1px solid #d0d7e2;
+            border-radius: 8px;
+            padding: 24px;
+        }
+
+        .dashboard-title {
+            color: #2a3342;
+            margin: 0 0 24px 0;
+            font-size: 42px;
+            font-weight: 500;
+            letter-spacing: 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .earthquake-summary {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .summary-item {
+            flex: 1;
+            padding: 20px 18px;
+            text-align: center;
+            background: #ffffff;
+        }
+
+        .summary-item + .summary-item {
+            border-left: 1px solid #d3dbe7;
+        }
+
+        .summary-icon {
+            font-size: 28px;
+            color: #1f6fd8;
+            margin-bottom: 12px;
+        }
+
+        .summary-label {
+            margin: 12px 0 0 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #7a8597;
+            text-transform: capitalize;
+        }
+
+        .summary-value {
+            font-size: 42px;
+            font-weight: 700;
+            color: #2a3342;
+            line-height: 1.1;
+            margin: 0;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: minmax(220px, 0.8fr) minmax(0, 2fr) minmax(260px, 0.9fr);
+            gap: 20px;
+            align-items: start;
+        }
+
+        .sidebar-column {
+            display: grid;
+            gap: 14px;
+            align-content: start;
+        }
+
+        .content-sidepanel {
+            background: #ffffff;
+            border: 1px solid #d3dbe7;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(28, 39, 61, 0.15);
+            overflow: hidden;
+        }
+
+        .sidepanel-header {
+            margin: 0;
+            padding: 14px 16px;
+            background: #f3f6fb;
+            color: #2f3b4f;
+            font-size: 20px;
+            font-weight: 600;
+            border-bottom: 1px solid #d3dbe7;
+        }
+
+        .sidepanel-body {
+            padding: 14px 16px;
+        }
+
+        .sidepanel-label {
+            margin: 0 0 10px 0;
+            color: #6b7688;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            font-weight: 700;
+        }
+
+        .sidepanel-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 14px 0;
+            display: grid;
+            gap: 8px;
+        }
+
+        .sidepanel-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fbff;
+            border: 1px solid #e1e7f1;
+            border-radius: 6px;
+            padding: 8px 10px;
+            color: #2f3b4f;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .sidepanel-value {
+            color: #1f6fd8;
+            font-weight: 700;
+        }
+
+        .sidepanel-note {
+            margin: 0;
+            color: #667085;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .content-left {
+            min-width: 0;
+        }
+
+        .content-right {
+            min-width: 0;
+        }
+
+        .time-panel {
+            background: #ffffff;
+            border: 1px solid #d3dbe7;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(28, 39, 61, 0.15);
+        }
+
+        .time-panel-title {
+            margin: 0 0 10px 0;
+            color: #2f3b4f;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .time-panel-label {
+            margin: 0 0 10px 0;
+            color: #6b7688;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            font-weight: 700;
+        }
+
+        .time-panel-value {
+            color: #2a3342;
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1.2;
+            word-break: break-word;
+        }
+
+        .time-panel-note {
+            margin-top: 8px;
+            color: #667085;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .stat-card {
+            background: #ffffff;
+            border: 1px solid #d3dbe7;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: left;
+            color: #2f3b4f;
+            box-shadow: 0 1px 3px rgba(28, 39, 61, 0.15);
+        }
+
+        .time-panel-date {
+            margin-top: 8px;
+            color: #667085;
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1.2;
+            word-break: break-word;
+        }
+
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            color: #2f3b4f;
+            font-weight: 600;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2a3342;
+        }
+
+        .section-title {
+            color: #2f3b4f;
+            border-bottom: 1px solid #d3dbe7;
+            padding-bottom: 10px;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+
+        .table-container {
+            background: #ffffff;
+            border: 1px solid #d3dbe7;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(28, 39, 61, 0.15);
+        }
+
+        .table-header {
+            font-size: 36px;
+            font-weight: 500;
+            color: #2f3b4f;
+            margin: 0;
+            padding: 16px 20px;
+            text-align: center;
+            border-bottom: 1px solid #d3dbe7;
+            background: #ffffff;
+        }
+
+        table {
+            width: 100%;
+            color: #2f3b4f;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f3f6fb;
+            padding: 12px;
+            text-align: left;
+            color: #455066;
+            font-weight: bold;
+            border-bottom: 1px solid #d3dbe7;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #edf1f7;
+        }
+
+        tr:hover {
+            background: #f7faff;
+        }
+
+        .empty-message {
+            color: #667085;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .magnitude-badge {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 5px 10px;
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .badge-minor {
+            background: #2e7d32;
+        }
+
+        .badge-light {
+            background: #1565c0;
+        }
+
+        .badge-moderate {
+            background: #f9a825;
+        }
+
+        .badge-strong {
+            background: #ef6c00;
+        }
+
+        .badge-major {
+            background: #c62828;
+        }
+
+        .chart-wrap {
+            padding: 18px 20px 20px 20px;
+            height: 320px;
+        }
+
+        @media (max-width: 1100px) {
+            .content-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .content-right {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .dashboard-navbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .navbar-links {
+                width: 100%;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .content-right {
+                grid-column: auto;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-title {
+                font-size: 34px;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-container">
+    <div class="dashboard-navbar">
+        <div class="navbar-brand">
+            <i class="fas fa-wave-square"></i>
+            <span>SeismoNepal Admin</span>
+        </div>
+        <div class="navbar-links">
+            <a class="navbar-link" href="{% url 'admin:index' %}">
+                <i class="fas fa-table-columns"></i>
+                <span>Dashboard</span>
+            </a>
+            <a class="navbar-link" href="/admin/client-profile/">
+                <i class="fas fa-users"></i>
+                <span>Client Info</span>
+            </a>
+            <a class="navbar-link" href="/admin/earthquake-data/">
+                <i class="fas fa-chart-line"></i>
+                <span>Earthquake Data</span>
+            </a>
+            <a class="navbar-link" href="{% url 'portal-logout' %}">
+                <i class="fas fa-right-from-bracket"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="dashboard-surface">
+    <h1 class="dashboard-title">Dashboard</h1>
+
+    <div class="content-grid">
+    <div class="sidebar-column">
+        <div class="content-sidepanel">
+            <h2 class="sidepanel-header">Overview</h2>
+            <div class="sidepanel-body">
+                <p class="sidepanel-label">Quick Stats</p>
+                <ul class="sidepanel-list">
+                    <li class="sidepanel-item">
+                        <span>Accounts</span>
+                        <span class="sidepanel-value">{{ total_users }}</span>
+                    </li>
+                    <li class="sidepanel-item">
+                        <span>Total Earthquake Records</span>
+                        <span class="sidepanel-value">{{ total_earthquakes }}</span>
+                    </li>
+                    <li class="sidepanel-item">
+                        <span>Users with Tokens</span>
+                        <span class="sidepanel-value">{{ users_with_tokens }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="content-sidepanel">
+            <h2 class="sidepanel-header">Safety Measures</h2>
+            <div class="sidepanel-body">
+                <p class="sidepanel-label">Resources</p>
+                <ul class="sidepanel-list">
+                    <li class="sidepanel-item">
+                        <span>Preparedness Guide</span>
+                        <a class="sidepanel-value" href="/portal/safety-measures/">Open</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-left">
+
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Accounts</h3>
+            <div class="stat-number">{{ total_users }}</div>
+        </div>
+
+        <div class="stat-card">
+            <h3>Total Earthquake Records</h3>
+            <div class="stat-number">{{ total_earthquakes }}</div>
+        </div>
+
+        <div class="stat-card">
+            <h3>Users with Tokens</h3>
+            <div class="stat-number">{{ users_with_tokens }}</div>
+        </div>
+    </div>
+
+    <!-- Yearly Magnitude Statistics -->
+    <div class="table-container">
+        <h1 class="table-header">Yearly Average Magnitude (2006-2026)</h1>
+        {% if yearly_magnitude_stats %}
+            <div class="chart-wrap">
+                <canvas id="magnitudeBarChart"></canvas>
+            </div>
+        {% else %}
+            <p class="empty-message">No data available</p>
+        {% endif %}
+    </div>
+
+    <!-- Earthquake Summary -->
+    <div class="table-container">
+        <h1 class="table-header">Earthquake Summary</h1>
+        <div class="earthquake-summary">
+            <div class="summary-item">
+                <i class="fas fa-chart-line summary-icon"></i>
+                <div class="summary-value">{{ monthly_count }}</div>
+                <p class="summary-label">This Month</p>
+            </div>
+
+            <div class="summary-item">
+                <i class="fas fa-calendar summary-icon"></i>
+                <div class="summary-value">{{ today_count }}</div>
+                <p class="summary-label">Today</p>
+            </div>
+
+            <div class="summary-item">
+                <i class="fas fa-tachometer-alt summary-icon"></i>
+                <div class="summary-value">{{ average_magnitude }}</div>
+                <p class="summary-label">Avg Magnitude</p>
+            </div>
+        </div>
+    </div>
+
+    </div>
+
+    <div class="content-right">
+        <div class="time-panel">
+            <div id="kathmandu-time" class="time-panel-value">--:--:-- --</div>
+            <div id="kathmandu-date" class="time-panel-date">---</div>
+        </div>
+    </div>
+
+    </div>
+</div>
+{% if yearly_magnitude_stats %}
+{{ magnitude_chart_labels|json_script:"magnitude-chart-labels" }}
+{{ magnitude_chart_values|json_script:"magnitude-chart-values" }}
+{{ magnitude_chart_colors|json_script:"magnitude-chart-colors" }}
+<script>
+    (function () {
+        const canvas = document.getElementById('magnitudeBarChart');
+        const labelsNode = document.getElementById('magnitude-chart-labels');
+        const valuesNode = document.getElementById('magnitude-chart-values');
+        const colorsNode = document.getElementById('magnitude-chart-colors');
+        if (!canvas || !labelsNode || !valuesNode || !colorsNode || typeof Chart === 'undefined') {
+            return;
+        }
+
+        const labels = JSON.parse(labelsNode.textContent || '[]');
+        const values = JSON.parse(valuesNode.textContent || '[]');
+        const colors = JSON.parse(colorsNode.textContent || '[]');
+
+        new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Avg Magnitude',
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: colors,
+                        borderWidth: 1,
+                        borderRadius: 6,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Year',
+                        },
+                        grid: {
+                            display: false,
+                        },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Magnitude',
+                        },
+                        suggestedMax: 8,
+                        ticks: {
+                            callback: function(value) {
+                                return Number(value).toFixed(1);
+                            },
+                        },
+                    },
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'left',
+                        align: 'end',
+                        title: {
+                            display: true,
+                            text: 'LEGENDS',
+                            font: {
+                                weight: 'bold',
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    })();
+
+    (function () {
+        const timeNode = document.getElementById('kathmandu-time');
+        const dateNode = document.getElementById('kathmandu-date');
+        if (!timeNode || !dateNode) {
+            return;
+        }
+
+        const timeFormatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Kathmandu',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true,
+        });
+
+        const dateFormatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Kathmandu',
+            month: 'short',
+            day: '2-digit',
+            year: 'numeric',
+        });
+
+        const formatKathmanduDate = (date) => {
+            const parts = dateFormatter.formatToParts(date);
+            const month = parts.find((part) => part.type === 'month')?.value || '---';
+            const day = parts.find((part) => part.type === 'day')?.value || '--';
+            const year = parts.find((part) => part.type === 'year')?.value || '----';
+            return `${month}-${day}-${year}`;
+        };
+
+        const updateClock = () => {
+            const now = new Date();
+            timeNode.textContent = `${timeFormatter.format(now)} Kathmandu, Nepal`;
+            dateNode.textContent = formatKathmanduDate(now);
+        };
+
+        updateClock();
+        setInterval(updateClock, 1000);
+    })();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, Text, View, FlatList, ActivityIndicator } from 'react-native';
-import { useEffect, useState } from 'react';
+import { StyleSheet, Text, View, FlatList, ActivityIndicator, TextInput, Animated } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 
@@ -24,6 +24,22 @@ const NEPAL_BOUNDS = {
 
 const BLOCKED_PLACE_PATTERN = /(india|china|southern tibetan plateau|tibetan plateau|xizang)/i;
 const LANGUAGE_KEY = 'appLanguage';
+const SEARCH_EVENTS_CACHE_KEY = 'searchEventsCacheV2';
+const REQUEST_TIMEOUT_MS = 4500;
+const USGS_FALLBACK_START_DATE = '2006-01-01';
+const USGS_FALLBACK_END_DATE = '2026-12-31';
+const USGS_FALLBACK_LIMIT = 1200;
+
+const fetchWithTimeout = async (url: string, timeoutMs: number) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
 
 const extractDistrict = (place: string) => {
   // Example: "15 km N of Ilam, Nepal" -> "Ilam"
@@ -42,10 +58,33 @@ export default function SearchScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [language, setLanguage] = useState<'en' | 'ne'>('en');
-  const [liveVisible, setLiveVisible] = useState(true);
+  const [searchText, setSearchText] = useState('');
+  const [minMag, setMinMag] = useState('');
+  const [maxMag, setMaxMag] = useState('');
+  const liveDotOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    fetchEvents();
+    const bootstrapSearch = async () => {
+      let hasCachedData = false;
+
+      try {
+        const rawCachedEvents = await AsyncStorage.getItem(SEARCH_EVENTS_CACHE_KEY);
+        if (rawCachedEvents) {
+          const parsedEvents = JSON.parse(rawCachedEvents) as EventItem[];
+          if (Array.isArray(parsedEvents) && parsedEvents.length > 0) {
+            setEvents(parsedEvents);
+            setLoading(false);
+            hasCachedData = true;
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to load cached search events:', error);
+      }
+
+      await fetchEvents(!hasCachedData);
+    };
+
+    void bootstrapSearch();
   }, []);
 
   useFocusEffect(
@@ -60,30 +99,53 @@ export default function SearchScreen() {
           console.warn('Failed to load language preference:', loadError);
         }
       };
-
       void loadLanguage();
     }, [])
   );
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setLiveVisible((prev) => !prev);
-    }, 700);
+    const blinkAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(liveDotOpacity, {
+          toValue: 0.25,
+          duration: 450,
+          useNativeDriver: true,
+        }),
+        Animated.timing(liveDotOpacity, {
+          toValue: 1,
+          duration: 450,
+          useNativeDriver: true,
+        }),
+      ])
+    );
 
-    return () => clearInterval(timer);
-  }, []);
+    blinkAnimation.start();
 
-  const fetchEvents = async () => {
+    return () => {
+      blinkAnimation.stop();
+    };
+  }, [liveDotOpacity]);
+
+  const persistEvents = async (nextEvents: EventItem[]) => {
     try {
+      await AsyncStorage.setItem(SEARCH_EVENTS_CACHE_KEY, JSON.stringify(nextEvents));
+    } catch (error) {
+      console.warn('Failed to cache search events:', error);
+    }
+  };
+
+  const fetchEvents = async (showLoader: boolean) => {
+    if (showLoader) {
       setError(null);
       setLoading(true);
+    }
 
+    try {
       const eventsUrl = `${API_BASE_URL}/api/scraper/events/`;
-      console.log('Fetching events from backend:', eventsUrl);
 
       let backendEvents: EventItem[] = [];
       try {
-        const response = await fetch(eventsUrl);
+        const response = await fetchWithTimeout(eventsUrl, REQUEST_TIMEOUT_MS);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         backendEvents = (Array.isArray(data) ? data : []).map((item: any) => {
@@ -102,20 +164,20 @@ export default function SearchScreen() {
 
       if (backendEvents.length > 0) {
         setEvents(backendEvents);
+        await persistEvents(backendEvents);
         return;
       }
 
-      const startDate = '2020-01-01';
-      const endDate = new Date().toISOString().slice(0, 10);
+      const startDate = USGS_FALLBACK_START_DATE;
+      const endDate = USGS_FALLBACK_END_DATE;
       const usgsUrl =
         `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson` +
         `&minlatitude=${NEPAL_BOUNDS.minLat}&maxlatitude=${NEPAL_BOUNDS.maxLat}` +
         `&minlongitude=${NEPAL_BOUNDS.minLon}&maxlongitude=${NEPAL_BOUNDS.maxLon}` +
         `&starttime=${startDate}&endtime=${endDate}` +
-        `&orderby=time&limit=5000`;
+        `&orderby=time&limit=${USGS_FALLBACK_LIMIT}`;
 
-      console.log('Fetching events from USGS fallback:', usgsUrl);
-      const usgsResponse = await fetch(usgsUrl);
+      const usgsResponse = await fetchWithTimeout(usgsUrl, REQUEST_TIMEOUT_MS);
       if (!usgsResponse.ok) throw new Error(`USGS HTTP ${usgsResponse.status}`);
 
       const usgsData = await usgsResponse.json();
@@ -146,12 +208,19 @@ export default function SearchScreen() {
           };
         });
 
-      setEvents(usgsEvents);
+      if (usgsEvents.length > 0) {
+        setEvents(usgsEvents);
+        await persistEvents(usgsEvents);
+      }
     } catch (e: any) {
       console.error('Error loading earthquakes:', e);
-      setError(e?.message ?? 'Failed to load earthquakes');
+      if (showLoader) {
+        setError(e?.message ?? 'Failed to load earthquakes');
+      }
     } finally {
-      setLoading(false);
+      if (showLoader) {
+        setLoading(false);
+      }
     }
   };
 
@@ -170,7 +239,6 @@ export default function SearchScreen() {
   };
 
   const titleText = language === 'ne' ? 'नेपालका भूकम्पहरू' : 'Nepal Earthquakes';
-  const countText = language === 'ne' ? `कुल घटना: ${events.length}` : `Total events: ${events.length}`;
   const loadingText = language === 'ne' ? 'डेटा लोड हुँदैछ...' : 'Loading...';
   const errorPrefix = language === 'ne' ? 'त्रुटि' : 'Error';
   const emptyText =
@@ -179,6 +247,23 @@ export default function SearchScreen() {
       : 'No earthquake data found for selected period.';
   const magnitudeLabel = language === 'ne' ? 'म्याग्निच्युड' : 'Magnitude';
   const dateLabel = language === 'ne' ? 'मिति' : 'Date';
+
+  // Filter events based on search and magnitude
+  const filteredEvents = useMemo(() => {
+    const normalizedSearchText = searchText.trim().toLowerCase();
+    const min = parseFloat(minMag);
+    const max = parseFloat(maxMag);
+
+    return events.filter((event) => {
+      const matchesLocation = event.location.toLowerCase().includes(normalizedSearchText);
+      const matchesMin = Number.isNaN(min) ? true : event.magnitude >= min;
+      const matchesMax = Number.isNaN(max) ? true : event.magnitude <= max;
+      return matchesLocation && matchesMin && matchesMax;
+    });
+  }, [events, searchText, minMag, maxMag]);
+
+  const countText =
+    language === 'ne' ? `कुल भूकम्पहरू: ${filteredEvents.length}` : `Total Earthquakes: ${filteredEvents.length}`;
 
   return (
     <View style={styles.container}>
@@ -191,10 +276,48 @@ export default function SearchScreen() {
 
       <Text style={styles.title}>{titleText}</Text>
       <View style={styles.liveRow}>
-        <View style={[styles.liveDot, !liveVisible && styles.liveDotHidden]} />
+        <Animated.View style={[styles.liveDot, { opacity: liveDotOpacity }]} />
         <Text style={styles.liveText}>LIVE</Text>
       </View>
       <Text style={styles.count}>{countText}</Text>
+
+      {/* Search and filter UI */}
+      <View style={styles.filterRow}>
+        <View style={styles.filterCol}>
+          <Text style={styles.filterLabel}>{language === 'ne' ? 'स्थान खोज्नुहोस्' : 'Search Location'}</Text>
+          <TextInput
+            style={styles.filterInput}
+            placeholder={language === 'ne' ? 'स्थान' : 'Location'}
+            placeholderTextColor="#fff8"
+            value={searchText}
+            onChangeText={setSearchText}
+          />
+        </View>
+        <View style={styles.filterColSmall}>
+          <Text style={styles.filterLabel}>{language === 'ne' ? 'न्यूनतम म्याग्निच्युड' : 'Min Mag'}</Text>
+          <TextInput
+            style={styles.filterInput}
+            placeholder="Min"
+            placeholderTextColor="#fff8"
+            value={minMag}
+            onChangeText={setMinMag}
+            keyboardType="numeric"
+            maxLength={4}
+          />
+        </View>
+        <View style={styles.filterColSmall}>
+          <Text style={styles.filterLabel}>{language === 'ne' ? 'अधिकतम म्याग्निच्युड' : 'Max Mag'}</Text>
+          <TextInput
+            style={styles.filterInput}
+            placeholder="Max"
+            placeholderTextColor="#fff8"
+            value={maxMag}
+            onChangeText={setMaxMag}
+            keyboardType="numeric"
+            maxLength={4}
+          />
+        </View>
+      </View>
 
       {loading ? (
         <View style={styles.loaderWrap}>
@@ -205,9 +328,13 @@ export default function SearchScreen() {
       {error ? <Text style={styles.error}>{`${errorPrefix}: ${error}`}</Text> : null}
 
       <FlatList
-        data={events}
+        data={filteredEvents}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
+        initialNumToRender={12}
+        maxToRenderPerBatch={12}
+        windowSize={7}
+        removeClippedSubviews
         ListEmptyComponent={
           !loading ? <Text style={styles.empty}>{emptyText}</Text> : null
         }
@@ -220,10 +347,43 @@ export default function SearchScreen() {
         )}
       />
     </View>
+
   );
 }
 
 const styles = StyleSheet.create({
+    filterRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+      gap: 10,
+      marginTop: 18,
+      marginBottom: 2,
+      paddingHorizontal: 10,
+    },
+    filterCol: {
+      flex: 1.5,
+      marginRight: 6,
+    },
+    filterColSmall: {
+      flex: 1,
+      marginRight: 6,
+    },
+    filterLabel: {
+      color: '#fff',
+      fontSize: 13,
+      fontWeight: '700',
+      marginBottom: 2,
+    },
+    filterInput: {
+      backgroundColor: 'rgba(255,255,255,0.08)',
+      color: '#fff',
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      fontSize: 15,
+      fontWeight: '700',
+    },
   container: {
     flex: 1,
     backgroundColor: '#df0000',
@@ -256,10 +416,6 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 999,
     backgroundColor: '#ff2a2a',
-  },
-  liveDotHidden: {
-    opacity: 0.25,
-    transform: [{ scale: 0.72 }],
   },
   liveText: {
     color: '#ffd6d6',

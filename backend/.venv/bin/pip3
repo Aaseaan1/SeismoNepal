@@ -1,5 +1,5 @@
 #!/bin/sh
-'''exec' "/Volumes/AASHU'S HD/3RD YEAR/FYP/SeismoNep/backend/.venv/bin/python3" "$0" "$@"
+'''exec' "/Volumes/AASHU'S HD/3RD YEAR/FYP/SeismoNep/backend/.venv/bin/python" "$0" "$@"
 ' '''
 # -*- coding: utf-8 -*-
 import re

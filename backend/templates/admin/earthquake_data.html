@@ -1,0 +1,395 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}Earthquake Data{% endblock %}
+
+{% block extrahead %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    #header,
+    #nav-sidebar,
+    .breadcrumbs,
+    #toggle-nav-sidebar {
+        display: none !important;
+    }
+
+    #main,
+    #content {
+        margin-left: 0 !important;
+    }
+
+    .data-page-wrap {
+        padding: 24px;
+        background: linear-gradient(to bottom, #000000 0%, #ff0000 100%);
+        min-height: calc(100vh - 48px);
+        border-radius: 10px;
+    }
+
+    .dashboard-navbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        background: #101722;
+        border: 1px solid rgba(255, 255, 255, 0.9);
+        border-radius: 10px;
+        padding: 18px 22px;
+        margin-bottom: 18px;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.45), 0 2px 8px rgba(7, 12, 20, 0.35);
+    }
+
+    .navbar-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #f5f8ff;
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+    }
+
+    .navbar-brand i {
+        color: #ff4d4d;
+        font-size: 22px;
+    }
+
+    .navbar-links {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .navbar-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #d9e6ff;
+        font-size: 15px;
+        font-weight: 700;
+        border: 1px solid #31445f;
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .navbar-link:hover {
+        background: rgba(35, 144, 255, 0.16);
+        border-color: #4f9cff;
+        color: #ffffff;
+    }
+
+    .data-surface {
+        background: #f4f7fb;
+        border: 1px solid #d3dbe7;
+        border-radius: 8px;
+        padding: 20px;
+    }
+
+    .data-header {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        margin-bottom: 14px;
+    }
+
+    .data-title {
+        margin: 0;
+        color: #2a3342;
+        font-size: 32px;
+        font-weight: 600;
+    }
+
+    .table-wrap {
+        overflow: auto;
+        border: 1px solid #d3dbe7;
+        border-radius: 8px;
+        background: #ffffff !important;
+    }
+
+    .year-section {
+        margin-bottom: 18px;
+        border: 1px solid #d3dbe7;
+        border-radius: 8px;
+        background: #ffffff;
+        overflow: hidden;
+    }
+
+    .year-box {
+        border: 2px solid #c7d2e5;
+        border-radius: 12px;
+        background: #ffffff;
+        box-shadow: 0 8px 18px rgba(16, 23, 34, 0.08);
+        padding: 28px 20px;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+        cursor: pointer;
+        width: 100%;
+        border: 2px solid #c7d2e5;
+        font: inherit;
+    }
+
+    .year-box:hover {
+        transform: translateY(-6px) scale(1.01);
+        border-color: #8fb0e5;
+        box-shadow: 0 16px 28px rgba(16, 23, 34, 0.18);
+        background: linear-gradient(180deg, #ffffff 0%, #f6faff 100%);
+    }
+
+    .year-box:focus-visible {
+        outline: 3px solid #2e77d0;
+        outline-offset: 2px;
+    }
+
+    .year-card {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .year-details {
+        display: none;
+        border: 1px solid #d3dbe7;
+        border-radius: 10px;
+        background: #ffffff;
+        overflow: hidden;
+    }
+
+    .year-details.open {
+        display: block;
+    }
+
+    .year-box-hint {
+        margin: 10px 0 0 0;
+        color: #2e77d0;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .year-box-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+    }
+
+    .year-box-title {
+        margin: 0 0 10px 0;
+        color: #1f2a3a;
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+    }
+
+    .year-box-text {
+        margin: 0;
+        color: #4c5c73;
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    .year-box-subtext {
+        margin: 8px 0 0 0;
+        color: #6b7d97;
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    .year-header {
+        margin: 0;
+        padding: 10px 12px;
+        background: #f3f6fb;
+        border-bottom: 1px solid #d3dbe7;
+        color: #2f3b4f;
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        color: #111827 !important;
+        background: #ffffff !important;
+        min-width: 740px;
+    }
+
+    th {
+        background: #ffffff !important;
+        color: #111827 !important;
+        text-align: left;
+        padding: 10px;
+        border-bottom: 1px solid #d3dbe7;
+        font-size: 18px;
+    }
+
+    td {
+        background: #ffffff !important;
+        color: #111827 !important;
+        padding: 10px;
+        border-bottom: 1px solid #edf1f7;
+        font-size: 18px;
+    }
+
+    tr:hover {
+        background: #f8fbff;
+    }
+
+    .empty {
+        padding: 18px;
+        text-align: center;
+        color: #67748a;
+        font-weight: 600;
+    }
+
+    @media (max-width: 720px) {
+        .dashboard-navbar {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .navbar-links {
+            width: 100%;
+        }
+
+        .year-box-row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="data-page-wrap">
+    <div class="dashboard-navbar">
+        <div class="navbar-brand">
+            <i class="fas fa-wave-square"></i>
+            <span>SeismoNepal Admin</span>
+        </div>
+        <div class="navbar-links">
+            <a class="navbar-link" href="/admin/">
+                <i class="fas fa-table-columns"></i>
+                <span>Dashboard</span>
+            </a>
+            <a class="navbar-link" href="/admin/client-profile/">
+                <i class="fas fa-users"></i>
+                <span>Client Info</span>
+            </a>
+            <a class="navbar-link" href="/admin/earthquake-data/">
+                <i class="fas fa-chart-line"></i>
+                <span>Earthquake Data</span>
+            </a>
+            <a class="navbar-link" href="{% url 'portal-logout' %}">
+                <i class="fas fa-right-from-bracket"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="data-surface">
+        <div class="data-header">
+            <h1 class="data-title">Nepal Earthquake Data</h1>
+        </div>
+
+        <div class="year-box-row">
+            {% for group in yearly_groups %}
+                <div class="year-card">
+                    <button
+                        type="button"
+                        class="year-box js-year-toggle"
+                        data-target="year-details-{{ group.year }}"
+                        aria-expanded="false"
+                        aria-controls="year-details-{{ group.year }}"
+                    >
+                        <h2 class="year-box-title">{{ group.year }}</h2>
+                        <p class="year-box-text">Total records: {{ group.events|length }}</p>
+                        <p class="year-box-subtext">
+                            {% if group.events %}
+                                Data is available for this year.
+                            {% else %}
+                                No earthquake records for this year.
+                            {% endif %}
+                        </p>
+                        <p class="year-box-hint">Click to view data set</p>
+                    </button>
+
+                    <div id="year-details-{{ group.year }}" class="year-details">
+                        <div class="table-wrap">
+                            {% if group.events %}
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Occurred At</th>
+                                            <th>Location</th>
+                                            <th>Magnitude</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for event in group.events %}
+                                            <tr>
+                                                <td>{{ forloop.counter }}</td>
+                                                <td>{{ event.occurred_at_display }}</td>
+                                                <td>{{ event.location }}</td>
+                                                <td>
+                                                    {% if event.magnitude is not None %}
+                                                        {{ event.magnitude }}
+                                                    {% else %}
+                                                        N/A
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            {% else %}
+                                <div class="empty">No earthquake records for {{ group.year }}.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const toggles = document.querySelectorAll('.js-year-toggle');
+
+        function closeAll() {
+            toggles.forEach((toggle) => {
+                const targetId = toggle.getAttribute('data-target');
+                const panel = targetId ? document.getElementById(targetId) : null;
+                if (panel) {
+                    panel.classList.remove('open');
+                }
+                toggle.setAttribute('aria-expanded', 'false');
+            });
+        }
+
+        toggles.forEach((toggle) => {
+            toggle.addEventListener('click', () => {
+                const targetId = toggle.getAttribute('data-target');
+                const panel = targetId ? document.getElementById(targetId) : null;
+                if (!panel) {
+                    return;
+                }
+
+                const willOpen = !panel.classList.contains('open');
+                closeAll();
+
+                if (willOpen) {
+                    panel.classList.add('open');
+                    toggle.setAttribute('aria-expanded', 'true');
+                }
+            });
+        });
+    })();
+</script>
+{% endblock %}

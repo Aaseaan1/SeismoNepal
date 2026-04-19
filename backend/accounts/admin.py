@@ -13,6 +13,5 @@ class CustomUserAdmin(UserAdmin):
 	list_filter = ('role', 'is_active', 'is_staff')
 
 
-@admin.register(ClientProfile)
-class ClientProfileAdmin(admin.ModelAdmin):
-	list_display = ('user', 'full_name', 'emergency_contact')
+# Remove ClientProfile from Django admin to disable default change page
+# admin.site.unregister(ClientProfile)  # Not needed if not registered

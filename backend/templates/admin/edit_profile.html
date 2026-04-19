@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Client Profile</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .form-row { display: flex; gap: 24px; margin-bottom: 18px; }
+        .form-col { flex: 1 1 0; min-width: 0; }
+        .center-viewport { min-height: calc(100vh - 120px); display: flex; align-items: center; justify-content: center; }
+        .form-wrap { width: 800px; max-width: 800px; margin: 32px auto; height: 700px; background: #fff; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 32px 28px; }
+        .form-title { font-size: 28px; font-weight: 700; margin-bottom: 24px; color: #2a3342; text-align: center; }
+        .form-group { margin-bottom: 18px; }
+        .form-label { font-weight: 700; margin-bottom: 8px; display: block; color: #222; font-size: 20px; letter-spacing: 0.2px; }
+        .form-control,
+        input[type="text"], input[type="email"], input[type="number"], input[type="date"], select, textarea {
+            width: 100%; padding: 18px 16px; border: 1px solid #d3dbe7; border-radius: 8px; font-size: 20px; color: #222; background: #f8fafc; min-height: 54px; box-sizing: border-box;
+        }
+        .btn-submit { display: flex; align-items: center; gap: 8px; background: #198754; color: #fff; border: none; border-radius: 6px; padding: 10px 22px; font-size: 17px; font-weight: 700; margin-top: 10px; cursor: pointer; transition: background 0.2s; }
+        .btn-submit:hover { background: #157347; }
+    </style>
+    <style>
+        body { background: linear-gradient(to bottom, #000000 0%, #ff0000 100%); min-height: 100vh; margin: 0; font-family: 'Segoe UI', 'Roboto', Arial, sans-serif; }
+        .dashboard-navbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; background: #101722; border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 10px; padding: 18px 22px; margin-bottom: 18px; box-shadow: 0 0 10px rgba(255, 255, 255, 0.45), 0 2px 8px rgba(7, 12, 20, 0.35); }
+        .navbar-brand { display: flex; align-items: center; gap: 12px; color: #f5f8ff; font-size: 24px; font-weight: 700; letter-spacing: 0.2px; }
+        .navbar-brand i { color: #ff4d4d; font-size: 22px; }
+        .navbar-links { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .navbar-link { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; text-decoration: none; color: #d9e6ff; font-size: 15px; font-weight: 700; border: 1px solid #31445f; background: rgba(255, 255, 255, 0.02); }
+        .navbar-link:hover { background: rgba(35, 144, 255, 0.16); border-color: #4f9cff; color: #ffffff; }
+        @media (max-width: 720px) { .dashboard-navbar { flex-direction: column; align-items: flex-start; } .navbar-links { width: 100%; } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-navbar">
+        <div class="navbar-brand">
+            <i class="fas fa-wave-square"></i>
+            <span>SeismoNepal Admin</span>
+        </div>
+        <div class="navbar-links">
+            <a class="navbar-link" href="/admin/"><i class="fas fa-table-columns"></i><span>Dashboard</span></a>
+            <a class="navbar-link" href="/admin/client-profile/"><i class="fas fa-users"></i><span>Client Info</span></a>
+            <a class="navbar-link" href="/admin/earthquake-data/"><i class="fas fa-chart-line"></i><span>Earthquake Data</span></a>
+            <a class="navbar-link" href="/portal/logout/"><i class="fas fa-right-from-bracket"></i><span>Logout</span></a>
+        </div>
+    </div>
+    <div class="center-viewport">
+        <div class="form-wrap">
+            <div class="form-title">
+                <i class="fas fa-user-edit"></i> Edit Client Profile
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-row">
+                    <div class="form-group form-col">
+                        <label class="form-label" for="{{ form.user.id_for_label }}">{{ form.user.label }}</label>
+                        {{ form.user }}
+                        {% if form.user.help_text %}<small class="form-text text-muted">{{ form.user.help_text }}</small>{% endif %}
+                        {% for error in form.user.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="form-group form-col">
+                        <label class="form-label" for="{{ form.full_name.id_for_label }}">{{ form.full_name.label }}</label>
+                        {{ form.full_name }}
+                        {% if form.full_name.help_text %}<small class="form-text text-muted">{{ form.full_name.help_text }}</small>{% endif %}
+                        {% for error in form.full_name.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group form-col">
+                        <label class="form-label" for="{{ form.date_of_birth.id_for_label }}">{{ form.date_of_birth.label }}</label>
+                        {{ form.date_of_birth }}
+                        {% if form.date_of_birth.help_text %}<small class="form-text text-muted">{{ form.date_of_birth.help_text }}</small>{% endif %}
+                        {% for error in form.date_of_birth.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="form-group form-col">
+                        <label class="form-label" for="{{ form.address.id_for_label }}">{{ form.address.label }}</label>
+                        {{ form.address }}
+                        {% if form.address.help_text %}<small class="form-text text-muted">{{ form.address.help_text }}</small>{% endif %}
+                        {% for error in form.address.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group form-col">
+                        <label class="form-label" for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+                        {{ form.phone }}
+                        {% if form.phone.help_text %}<small class="form-text text-muted">{{ form.phone.help_text }}</small>{% endif %}
+                        {% for error in form.phone.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="form-group form-col">
+                        <label class="form-label" for="{{ form.district.id_for_label }}">{{ form.district.label }}</label>
+                        {{ form.district }}
+                        {% if form.district.help_text %}<small class="form-text text-muted">{{ form.district.help_text }}</small>{% endif %}
+                        {% for error in form.district.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group form-col">
+                        <label class="form-label" for="{{ form.sex.id_for_label }}">{{ form.sex.label }}</label>
+                        {{ form.sex }}
+                        {% if form.sex.help_text %}<small class="form-text text-muted">{{ form.sex.help_text }}</small>{% endif %}
+                        {% for error in form.sex.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="form-group form-col">
+                        <label class="form-label" for="{{ form.state_no.id_for_label }}">{{ form.state_no.label }}</label>
+                        {{ form.state_no }}
+                        {% if form.state_no.help_text %}<small class="form-text text-muted">{{ form.state_no.help_text }}</small>{% endif %}
+                        {% for error in form.state_no.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group form-col">
+                        <label class="form-label" for="{{ form.province.id_for_label }}">{{ form.province.label }}</label>
+                        {{ form.province }}
+                        {% if form.province.help_text %}<small class="form-text text-muted">{{ form.province.help_text }}</small>{% endif %}
+                        {% for error in form.province.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="form-group form-col">
+                        <label class="form-label" for="{{ form.blood_group.id_for_label }}">{{ form.blood_group.label }}</label>
+                        {{ form.blood_group }}
+                        {% if form.blood_group.help_text %}<small class="form-text text-muted">{{ form.blood_group.help_text }}</small>{% endif %}
+                        {% for error in form.blood_group.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+                <div class="form-row">
+                    <!-- Removed duplicate blood group field row -->
+                </div>
+                <div style="display: flex; gap: 16px; align-items: center; margin-top: 10px; justify-content: center;">
+                    <button type="submit" class="btn-submit"><i class="fas fa-save"></i> Save Changes</button>
+                    <button type="button" class="btn-submit" style="background:#ff0000;" onclick="window.location.href='/admin/client-profile/'">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

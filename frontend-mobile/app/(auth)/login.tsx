@@ -42,8 +42,8 @@ export default function LoginScreen() {
       // Silent best-effort registration for admin portal test-push support.
       try {
         await registerDeviceToken(data.access);
-      } catch (err) {
-        console.warn('Push token registration skipped:', err);
+      } catch {
+        // Intentionally ignore push setup failures during login.
       }
 
       // Navigate to home
@@ -59,7 +59,7 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.logoArea}>
-        <Text style={styles.appTitle}>SeismoNep</Text>
+          <Text style={styles.appTitle}>SeismoNepal</Text>
         <Text style={styles.subtitle}>Earthquake Monitoring</Text>
       </View>
 
@@ -80,6 +80,16 @@ export default function LoginScreen() {
           onChangeText={setPassword}
           editable={!loading}
         />
+
+        {/* Forgot Password Link */}
+        <View style={styles.forgotPasswordWrapper}>
+          <TouchableOpacity
+            onPress={() => router.push('/(auth)/forgot-password')}
+            disabled={loading}
+          >
+            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+          </TouchableOpacity>
+        </View>
 
         {error && <Text style={styles.errorText}>{error}</Text>}
 
@@ -120,6 +130,17 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 18,
     color: '#666',
+  },
+  forgotPasswordWrapper: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  forgotPasswordText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '500',
+    marginTop: 4,
+    marginBottom: 4,
   },
   formArea: {
     marginBottom: 40,

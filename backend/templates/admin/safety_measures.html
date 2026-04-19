@@ -1,0 +1,78 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Safety Measures - SeismoNepal</title>
+  <link rel="stylesheet" href="{% static 'css/portal.css' %}?v=20260408-1" />
+  <style>
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container.safety-page {
+      margin: 0;
+    }
+
+    .safety-page .meta,
+    .safety-page .safety-section h2,
+    .safety-page .safety-section li,
+    .safety-page .btn-logout {
+      font-size: 20px !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="container safety-page">
+    <h1>⚠️Earthquake Safety Measures⛑️</h1>
+    <p class="meta">Preparedness guide for Before Shock, During Shock, and After Shock.</p>
+
+    <div class="safety-grid">
+      <div class="safety-section">
+        <h2>Before Shock</h2>
+        <ul>
+          <li>Prepare an emergency kit with water, dry food, medicines, flashlight, and power bank.</li>
+          <li>Identify safe spots in each room: under sturdy tables and near interior walls.</li>
+          <li>Secure heavy furniture, shelves, and gas cylinders to prevent toppling.</li>
+          <li>Keep emergency contacts and local disaster numbers written and accessible.</li>
+          <li>Practice family evacuation and communication plans regularly.</li>
+        </ul>
+      </div>
+
+      <div class="safety-section">
+        <h2>During Shock</h2>
+        <ul>
+          <li>Drop, Cover, and Hold On. Protect your head and neck immediately.</li>
+          <li>Stay indoors if you are inside. Do not use elevators and avoid windows.</li>
+          <li>If outside, move to an open area away from buildings, poles, and wires.</li>
+          <li>If driving, stop in a clear area and remain inside the vehicle until shaking stops.</li>
+          <li>Stay calm and follow official alerts only from trusted sources.</li>
+        </ul>
+      </div>
+
+      <div class="safety-section">
+        <h2>After Shock</h2>
+        <ul>
+          <li>Expect aftershocks and move carefully to a safer open area if needed.</li>
+          <li>Check for injuries and provide first aid; call emergency services for serious cases.</li>
+          <li>Check for gas leaks, fire hazards, and damaged electrical lines before re-entering.</li>
+          <li>Avoid damaged buildings, bridges, and landslide-prone routes.</li>
+          <li>Use SMS/data for communication when voice networks are congested.</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="meta">
+      <a href="/admin/" class="btn-logout">Back To Dashboard</a>
+    </p>
+  </div>
+</body>
+</html>

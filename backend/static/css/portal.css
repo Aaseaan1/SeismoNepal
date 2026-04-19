@@ -19,6 +19,48 @@ body.login-page {
   text-align: center;
 }
 
+body.login-page .container {
+  max-width: 760px;
+  width: min(760px, 95vw);
+  min-height: 560px;
+  padding: 36px 34px;
+  border-radius: 14px;
+}
+
+body.login-page h1 {
+  font-size: 52px;
+  font-weight: 800;
+  margin-bottom: 18px;
+}
+
+body.login-page .auth-form {
+  margin-top: 34px;
+  gap: 14px;
+}
+
+body.login-page .auth-form .form-row {
+  margin-bottom: 14px;
+}
+
+body.login-page .auth-form label {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+body.login-page .auth-form input {
+  font-size: 19px;
+  padding: 14px 16px;
+  border-radius: 10px;
+}
+
+body.login-page .auth-form button {
+  min-width: 190px;
+  font-size: 20px;
+  font-weight: 700;
+  padding: 12px 20px;
+  border-radius: 10px;
+}
+
 .container {
   max-width: 560px;
   width: min(1030px, 92vw);
@@ -284,11 +326,16 @@ td.actions button {
 .safety-page {
   max-width: 910px;
   text-align: left;
+  font-size: 18px;
 }
 
 .safety-page h1,
 .safety-page .meta {
   text-align: center;
+}
+
+.safety-page .meta {
+  font-size: 18px;
 }
 
 .safety-section {
@@ -317,6 +364,11 @@ td.actions button {
 
 .safety-section h2 {
   margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.safety-section li {
+  font-size: 18px;
 }
 
 .safety-section ul {

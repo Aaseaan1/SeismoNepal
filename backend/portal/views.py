@@ -7,7 +7,7 @@ from django.utils import timezone
 from accounts.models import ClientProfile, User
 from alerts.models import AlertNotification, DeviceToken
 from alerts.services import dispatch_notification
-
+import pytz
 
 def is_admin_portal_user(user):
 	return user.is_authenticated and (user.is_staff or user.role == User.Roles.ADMIN)
@@ -27,7 +27,7 @@ def portal_home(request):
 
 
 def safety_measures(request):
-	return render(request, 'portal/safety_measures.html')
+	return render(request, 'admin/safety_measures.html')
 
 
 @login_required
@@ -115,6 +115,9 @@ def admin_send_test_push_all(request):
         users = User.objects.filter(is_active=True)
         sent_count = 0
         fail_count = 0
+        kathmandu_tz = pytz.timezone('Asia/Kathmandu')
+        now_kathmandu = timezone.now().astimezone(kathmandu_tz)
+        formatted_time = now_kathmandu.strftime('%m-%d-%Y at %H:%M:%S Kathmandu/Nepal Local Time')
         for user in users:
             has_device = DeviceToken.objects.filter(user=user).exists()
             if not has_device:
@@ -122,7 +125,7 @@ def admin_send_test_push_all(request):
             notification = AlertNotification.objects.create(
                 user=user,
                 channel=AlertNotification.Channels.APP,
-                message=f'Admin test push at {timezone.now().strftime("%Y-%m-%d %H:%M:%S UTC")}',
+                message=f'Admin Test Push at {formatted_time}',
             )
             if dispatch_notification(notification):
                 sent_count += 1
